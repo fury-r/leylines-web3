@@ -20,6 +20,42 @@ Welcome to our Proof of Concept (POC) Web3 Social Media application was develope
 ## Architecture  
 ![Architecture](image-8.png)
 
+## Quick Start
+
+You can now run the most common developer workflows from the repository root:
+
+```bash
+npm run dev:frontend
+npm run dev:backend
+npm run build
+npm run lint
+npm run format:frontend
+```
+
+- `npm run dev:frontend` starts the Next.js app on port `3000`
+- `npm run dev:backend` starts the Flask app from `/backend`
+- `npm run build` runs the frontend production build
+- `npm run lint` runs the frontend ESLint checks and a backend Python syntax check
+- `npm run format:frontend` runs Prettier for the frontend codebase
+
+### Recommended Local Setup Order
+
+1. Install frontend dependencies:
+   ```bash
+   cd frontend
+   npm install --legacy-peer-deps
+   cd ..
+   ```
+2. Create and activate a backend virtual environment:
+   ```bash
+   cd backend
+   python -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   cd ..
+   ```
+3. Run the app from the repository root with the commands above.
+
 ## Technologies Used
 
 - **Frontend:** Built using Next.js for the user interface.

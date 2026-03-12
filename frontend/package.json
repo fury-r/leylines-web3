@@ -5,7 +5,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .  --report-unused-disable-directives --max-warnings 0 ",
-    "fix-lint": "eslint . --report-unused-disable-directives --max-warnings 0  --fix"
+    "fix-lint": "eslint . --report-unused-disable-directives --max-warnings 0  --fix",
+    "format": "prettier --write \"**/*.{js,jsx,json,css,md}\""
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.1.1",

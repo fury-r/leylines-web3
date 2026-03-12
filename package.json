@@ -1,0 +1,16 @@
+{
+  "name": "leylines-web3",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev:frontend",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "cd backend && python app.py",
+    "build": "npm run build:frontend",
+    "build:frontend": "npm --prefix frontend run build",
+    "lint": "npm run lint:frontend && npm run check:backend",
+    "lint:frontend": "npm --prefix frontend run lint",
+    "fix-lint:frontend": "npm --prefix frontend run fix-lint",
+    "format:frontend": "npm --prefix frontend run format",
+    "check:backend": "cd backend && python -m compileall -q ."
+  }
+}
