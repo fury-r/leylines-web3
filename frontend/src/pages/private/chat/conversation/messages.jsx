@@ -1,10 +1,9 @@
 import React, { useEffect, useRef } from 'react'
 
-const Messages = ({ styles, data, message, setId, setIsOpen }) => {
+const Messages = ({ styles, data, setId, setIsOpen }) => {
   const scroll = useRef()
 
   useEffect(() => {
-    console.log(scroll)
     if (scroll?.current) {
       scroll?.current.scrollIntoView({ behavior: 'smooth' })
     }
@@ -20,16 +19,15 @@ const Messages = ({ styles, data, message, setId, setIsOpen }) => {
               className={styles[value.user + 2] + ' flex flex-col'}
               onClick={() => {
                 if (value.user == 1) {
-                  console.log(data)
                   setId(data.data[key].id)
                   setIsOpen(true)
                 }
               }}
             >
               <div
-                class={
+                className={
                   styles[value.user] +
-                  ' my-4 p-4 text-xl shadow-md ' +
+                  ' my-4 max-w-[80%] p-4 text-xl shadow-md ' +
                   (value.msg.length > 32 ? ' w-1/2' : '')
                 }
               >
@@ -37,8 +35,8 @@ const Messages = ({ styles, data, message, setId, setIsOpen }) => {
               </div>
               {value.seen == true &&
               value.user == 1 &&
-              key == data.length - 1 ? (
-                <label className='flex rounded-sm p-2 text-2xl shadow-sm'>
+              key == data.data.length - 1 ? (
+                <label className='flex rounded-sm p-2 text-sm uppercase tracking-[0.2em] text-slate-500 shadow-sm'>
                   seen
                 </label>
               ) : (
@@ -48,8 +46,18 @@ const Messages = ({ styles, data, message, setId, setIsOpen }) => {
           ))}
         </div>
       ) : (
-        <div className=' flex flex-col justify-center items-center text-3xl h-screen '>
-          Start a conversation
+        <div className='flex h-screen flex-col items-center justify-center px-6 text-center'>
+          <div className='rounded-3xl bg-white p-10 shadow-sm'>
+            <p className='text-xs uppercase tracking-[0.3em] text-slate-400'>
+              Direct messages
+            </p>
+            <h2 className='mt-2 text-3xl font-semibold text-slate-900'>
+              Start a conversation
+            </h2>
+            <p className='mt-2 max-w-md text-base text-slate-500'>
+              Messages in this view are stored with encryption on the backend.
+            </p>
+          </div>
         </div>
       )}
     </>

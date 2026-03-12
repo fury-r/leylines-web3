@@ -6,6 +6,7 @@ import axios from '../../../api/axios'
 import Image from 'next/image'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import toast, { Toaster } from 'react-hot-toast'
+import { logger } from '../../../utils/logger'
 
 const Chat = () => {
   const [data, setData] = useState({
@@ -21,11 +22,11 @@ const Chat = () => {
     axios
       .get('/v1/open-conversations')
       .then((res) => {
-        console.log(res.data)
+        logger.info('Loaded conversations', { count: res.data?.data?.length || 0 })
         setData(res.data)
       })
       .catch((e) => {
-        console.log(e.response.data)
+        logger.error('Failed to load conversations', e?.response?.data || e)
       })
   }
   const handleSearch = (e) => {
@@ -33,7 +34,6 @@ const Chat = () => {
     if (e.target.value.length == 0) {
       setSearch([])
     }
-    console.log(search)
     axios
       .post('/v1/search', {
         search
@@ -45,7 +45,7 @@ const Chat = () => {
         setSearch(res.data)
       })
       .catch((e) => {
-        console.log(e)
+        logger.error('Failed to search conversations', e)
       })
   }
 
@@ -54,17 +54,27 @@ const Chat = () => {
   }
 
   return (
-    <div className='flex  flex-1 flex-col   bg-sky-100 h-screen'>
+    <div className='flex flex-1 flex-col bg-slate-100 min-h-screen'>
       <Toaster />
-      <div className='mx-5 mt-1 flex flex-col h-full'>
+      <div className='mx-5 mt-1 flex h-full flex-col'>
         <div className='m-2 flex  flex-col'>
-          <div className='flex flex-row justify-center mt-4  '>
-            <div className='flex flex-row items-center w-5/6 shadow-md rounded-3xl bg-white  border-grey px-3'>
+          <div className='rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 p-5 text-white shadow-lg'>
+            <p className='text-xs uppercase tracking-[0.3em] text-slate-300'>
+              Messages
+            </p>
+            <h1 className='mt-2 text-3xl font-semibold'>Direct inbox</h1>
+            <p className='mt-2 text-sm text-slate-300'>
+              Search for people or jump back into an encrypted conversation.
+            </p>
+          </div>
+          <div className='mt-4 flex flex-row justify-center'>
+            <div className='flex w-5/6 flex-row items-center rounded-3xl border-grey bg-white px-3 shadow-md'>
               <input
-                className=' w-full h-16 text-xl outline-none'
+                className='h-16 w-full text-xl outline-none'
                 type='text'
                 name='search'
                 onChange={handleSearch}
+                placeholder='Search by username'
               />
               <FontAwesomeIcon
                 className='text-2xl text-gray-400'
@@ -80,7 +90,7 @@ const Chat = () => {
                     openConversation(search[key].username)
                   }}
                   key={key}
-                  class=' flex flex-row items-center   justify-between  w-full rounded-md p-3 py-2 text-left shadow-md h-30 focus:outline-none focus-visible:bg-indigo-50  bg-white'
+                  className='mt-3 flex h-30 w-full flex-row items-center justify-between rounded-2xl bg-white p-3 py-2 text-left shadow-md focus:outline-none focus-visible:bg-indigo-50'
                 >
                   <div
                     className={
@@ -105,11 +115,11 @@ const Chat = () => {
                     )}
                   </div>
                   <div>
-                    <h4 class='text-2xl font-semibold  text-gray-900 '>
+                    <h4 className='text-2xl font-semibold text-gray-900'>
                       {value.username}
                     </h4>
                     {data.mode == 1 ? (
-                      <div class='text-[13px]'>
+                      <div className='text-[13px]'>
                         {value?.unseen > 0
                           ? value.unseen +
                             ' new ' +
@@ -127,14 +137,14 @@ const Chat = () => {
             )}
           </ul>
         </div>
-        {data.data.length && search.length == 0 > 0 ? (
+        {data.data.length > 0 && search.length == 0 ? (
           data.data.map((value, key) => (
             <button
               onClick={() => {
                 openConversation(data.data[key].username)
               }}
               key={key}
-              class=' flex flex-row  bg-white items-center  justify-between  w-full rounded-3xl my-2 p-3 py-2 text-left shadow-md h-30 focus:outline-none focus-visible:bg-indigo-50'
+              className='my-2 flex h-30 w-full flex-row items-center justify-between rounded-3xl bg-white p-3 py-2 text-left shadow-md focus:outline-none focus-visible:bg-indigo-50'
             >
               <div className='flex flex-row items-center justify-center'>
                 <div
@@ -168,7 +178,7 @@ const Chat = () => {
                     icon={faCircle}
                   />
                 </div>
-                <h4 class='text-2xl font-semibold  text-gray-900 m-2 '>
+                <h4 className='m-2 text-2xl font-semibold text-gray-900'>
                   {value.username}
                 </h4>
               </div>
@@ -179,7 +189,7 @@ const Chat = () => {
                 </label>
 
                 {data.mode == 1 ? (
-                  <div class='text-2xl mr'>
+                  <div className='mr text-2xl'>
                     {value.unseen > 0
                       ? value.unseen +
                         ' new ' +
@@ -193,53 +203,17 @@ const Chat = () => {
             </button>
           ))
         ) : search.length == 0 ? (
-          <div className=' flex-col justify-center   self-center content-center h-[100%] overflow-hidden '>
-            <label>No open conversations</label>
+          <div className='mt-10 flex flex-col justify-center self-center overflow-hidden rounded-3xl bg-white px-8 py-10 text-center shadow-sm'>
+            <label className='text-xl font-semibold text-slate-900'>
+              No open conversations
+            </label>
+            <p className='mt-2 text-sm text-slate-500'>
+              Search for a user to start a new secure chat.
+            </p>
           </div>
         ) : (
           <></>
         )}
-        {/* 
-
-              <div className="divide-y divide-gray-200">
-
-        <button className="w-full text-left py-2 focus:outline-none focus-visible:bg-indigo-50">
-            <div className="flex items-center">
-                <img className="rounded-full items-start flex-shrink-0 mr-3" src="https://res.cloudinary.com/dc6deairt/image/upload/v1638102932/user-32-02_vll8uv.jpg" width="32" height="32" alt="Nhu Cassel" />
-                <div>
-                    <h4 className="text-sm font-semibold text-gray-900">Nhu Cassel</h4>
-                    <div className="text-[13px]">Hello Lauren 👋, · 24 Mar</div>
-                </div>
-            </div>
-        </button>
-        <button className="w-full text-left py-2 focus:outline-none focus-visible:bg-indigo-50">
-            <div className="flex items-center">
-                <img className="rounded-full items-start flex-shrink-0 mr-3" src="https://res.cloudinary.com/dc6deairt/image/upload/v1638102932/user-32-03_uzwykl.jpg" width="32" height="32" alt="Patrick Friedman" />
-                <div>
-                    <h4 className="text-sm font-semibold text-gray-900">Patrick Friedman</h4>
-                    <div className="text-[13px]">Yes, you’re right but… · 14 Mar</div>
-                </div>
-            </div>
-        </button>
-        <button className="w-full text-left py-2 focus:outline-none focus-visible:bg-indigo-50">
-            <div className="flex items-center">
-                <img className="rounded-full items-start flex-shrink-0 mr-3" src="https://res.cloudinary.com/dc6deairt/image/upload/v1638102932/user-32-04_ttlftd.jpg" width="32" height="32" alt="Byrne McKenzie" />
-                <div>
-                    <h4 className="text-sm font-semibold text-gray-900">Byrne McKenzie</h4>
-                    <div className="text-[13px]">Hey Lauren ✨, first of all… · 14 Mar</div>
-                </div>
-            </div>
-        </button>
-        <button className="w-full text-left py-2 focus:outline-none focus-visible:bg-indigo-50">
-            <div className="flex items-center">
-                <img className="rounded-full items-start flex-shrink-0 mr-3" src="https://res.cloudinary.com/dc6deairt/image/upload/v1638102932/user-32-05_bktgmb.jpg" width="32" height="32" alt="Scott Micheal" />
-                <div>
-                    <h4 className="text-sm font-semibold text-gray-900">Scott Micheal</h4>
-                    <div className="text-[13px]">No way 🤙! · 11 Mar</div>
-                </div>
-            </div>
-        </button>
-    </div> */}
       </div>
     </div>
   )
