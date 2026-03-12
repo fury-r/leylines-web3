@@ -31,7 +31,7 @@ const Chat = () => {
   }
   const handleSearch = (e) => {
     const search = e.target.value
-    if (e.target.value.length == 0) {
+    if (e.target.value.length === 0) {
       setSearch([])
     }
     axios
@@ -39,7 +39,7 @@ const Chat = () => {
         search
       })
       .then((res) => {
-        if (res.data.length == 0) {
+        if (res.data.length === 0) {
           toast.success('Nothing found')
         }
         setSearch(res.data)
@@ -118,7 +118,7 @@ const Chat = () => {
                     <h4 className='text-2xl font-semibold text-gray-900'>
                       {value.username}
                     </h4>
-                    {data.mode == 1 ? (
+                    {data.mode === 1 ? (
                       <div className='text-[13px]'>
                         {value?.unseen > 0
                           ? value.unseen +
@@ -126,18 +126,14 @@ const Chat = () => {
                             (value.unseen > 1 ? 'messages' : 'message')
                           : value.msg}
                       </div>
-                    ) : (
-                      <></>
-                    )}
+                    ) : null}
                   </div>
                 </button>
               ))
-            ) : (
-              <></>
-            )}
+            ) : null}
           </ul>
         </div>
-        {data.data.length > 0 && search.length == 0 ? (
+        {data.data.length > 0 && search.length === 0 ? (
           data.data.map((value, key) => (
             <button
               onClick={() => {
@@ -188,7 +184,7 @@ const Chat = () => {
                   {value.time}
                 </label>
 
-                {data.mode == 1 ? (
+                {data.mode === 1 ? (
                   <div className='mr text-2xl'>
                     {value.unseen > 0
                       ? value.unseen +
@@ -196,13 +192,11 @@ const Chat = () => {
                         (value.unseen > 1 ? 'messages' : 'message')
                       : 'Last message: ' + value.msg}
                   </div>
-                ) : (
-                  <></>
-                )}
+                ) : null}
               </div>
             </button>
           ))
-        ) : search.length == 0 ? (
+        ) : search.length === 0 ? (
           <div className='mt-10 flex flex-col justify-center self-center overflow-hidden rounded-3xl bg-white px-8 py-10 text-center shadow-sm'>
             <label className='text-xl font-semibold text-slate-900'>
               No open conversations
@@ -211,9 +205,7 @@ const Chat = () => {
               Search for a user to start a new secure chat.
             </p>
           </div>
-        ) : (
-          <></>
-        )}
+        ) : null}
       </div>
     </div>
   )

@@ -11,7 +11,7 @@ import { BiSend } from 'react-icons/bi'
 import { logger } from '../../../../utils/logger'
 const Conversation = () => {
   const router = useRouter()
-  const [show, setshow] = useState(false)
+  const [show, setShow] = useState(false)
   const [data, setData] = useState({
     data: []
   })
@@ -126,7 +126,7 @@ const Conversation = () => {
         <Toaster />
         <AccountAction
           showMenu={show}
-          setShowMenu={setshow}
+          setShowMenu={setShow}
           reload={getConversation}
           data={data}
         />
@@ -140,7 +140,7 @@ const Conversation = () => {
                   Encrypted chat
                 </span>
               </div>
-              <button onClick={() => setshow(true)} className='text-3xl'>
+              <button onClick={() => setShow(true)} className='text-3xl'>
                 <FontAwesomeIcon icon={faList} />
               </button>
             </div>

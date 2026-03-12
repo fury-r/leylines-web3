@@ -7,7 +7,7 @@ const Messages = ({ styles, data, setId, setIsOpen }) => {
     if (scroll?.current) {
       scroll?.current.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [scroll?.current, data])
+  }, [data])
   return (
     <>
       {data.data.length > 0 ? (
@@ -15,10 +15,10 @@ const Messages = ({ styles, data, setId, setIsOpen }) => {
           {data.data.map((value, key) => (
             <button
               key={key}
-              ref={key == data.data.length - 1 ? scroll : null}
+              ref={key === data.data.length - 1 ? scroll : null}
               className={styles[value.user + 2] + ' flex flex-col'}
               onClick={() => {
-                if (value.user == 1) {
+                if (value.user === 1) {
                   setId(data.data[key].id)
                   setIsOpen(true)
                 }
@@ -33,26 +33,22 @@ const Messages = ({ styles, data, setId, setIsOpen }) => {
               >
                 {value.msg}
               </div>
-              {value.seen == true &&
-              value.user == 1 &&
-              key == data.data.length - 1 ? (
+              {value.seen === true &&
+              value.user === 1 &&
+              key === data.data.length - 1 ? (
                 <label className='flex rounded-sm p-2 text-sm uppercase tracking-[0.2em] text-slate-500 shadow-sm'>
                   seen
                 </label>
-              ) : value.user == 1 && key == data.data.length - 1 ? (
+              ) : value.user === 1 && key === data.data.length - 1 ? (
                 <label className='flex rounded-sm p-2 text-sm uppercase tracking-[0.2em] text-slate-400 shadow-sm'>
                   delivered
                 </label>
-              ) : (
-                <></>
-              )}
-              {value.integrity_error == true ? (
+              ) : null}
+              {value.integrity_error === true ? (
                 <label className='mt-1 rounded-sm bg-amber-50 p-2 text-xs font-medium uppercase tracking-[0.2em] text-amber-700 shadow-sm'>
                   Integrity check failed
                 </label>
-              ) : (
-                <></>
-              )}
+              ) : null}
             </button>
           ))}
         </div>
