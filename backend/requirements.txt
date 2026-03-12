@@ -35,11 +35,10 @@ numpy==1.26.4
 pillow==10.3.0
 proto-plus==1.23.0
 protobuf==4.25.3
-py-crypto==0.0.4
 pyasn1==0.6.0
 pyasn1_modules==0.4.0
 pycodestyle==2.11.1
-pycrypto==2.6.1
+pycryptodome==3.21.0
 PyJWT==2.8.0
 pymongo==4.7.0
 pyparsing==3.1.2

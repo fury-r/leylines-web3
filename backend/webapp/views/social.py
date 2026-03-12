@@ -232,13 +232,16 @@ def open_conversations():
     user = ''
     result = []
     for row in messages:
-        conversation = db.messages.find_one({"msg_id": str(row['_id'])})
+        conversation = db.messages.find_one(
+            {"msg_id": row['_id']},
+            sort=[("datetime", pymongo.DESCENDING)],
+        )
         if user_id == row["user_1"]:
             user = db.users.find_one({"_id": ObjectId(row["user_2"])})
         else:
             user = db.users.find_one({"_id": ObjectId(row["user_1"])})
 
-        unseen = db.messages.find({"$and": [{"msg_id": str(row['_id'])}, {
+        unseen = db.messages.find({"$and": [{"msg_id": row['_id']}, {
                                   "seen": False}, {"user_2": user_id}]}).count()
         time = getTimedifference(user['online'])
 
@@ -250,7 +253,20 @@ def open_conversations():
         if user['visible'] == False:
             row['active'] = False
         if conversation:
-            row.update({'msg': conversation['msg'], 'time': getTimedifference(
+            preview = 'Encrypted message unavailable'
+            try:
+                preview = decrypt_text(
+                    conversation['msg'],
+                    str(conversation['msg_id']),
+                    conversation['nonce'],
+                    conversation.get('tag'),
+                )
+            except ValueError:
+                logger.warning(
+                    'failed to decrypt conversation preview',
+                    extra={'request_id': request.headers.get('X-Request-ID', '-')},
+                )
+            row.update({'msg': preview, 'time': getTimedifference(
                 conversation['datetime'])})
         if len(user['profile_picture']) > 0:
             print("im in")
@@ -286,7 +302,22 @@ def get_messages():
         db.messages.update_many({'$or':[{'user_1':user_id,'user_2':id},{'user_1':id,'user_2':user_id}]}, {"$set": {"seen": True}})
 
         for data in messages_list:
-            row = {"id": str(data["_id"]), "msg": decrypt_text(data["msg"],str(data['msg_id']),data['nonce']), "user": 1,'seen':data['seen']}
+            message = 'Encrypted message unavailable'
+            integrity_error = False
+            try:
+                message = decrypt_text(
+                    data["msg"],
+                    str(data['msg_id']),
+                    data['nonce'],
+                    data.get('tag'),
+                )
+            except ValueError:
+                integrity_error = True
+                logger.warning(
+                    'failed to decrypt message',
+                    extra={'request_id': request.headers.get('X-Request-ID', '-')},
+                )
+            row = {"id": str(data["_id"]), "msg": message, "user": 1,'seen':data['seen'], 'integrity_error': integrity_error}
 
             if data['user_1'] != user_id:
                 row['user'] = 2

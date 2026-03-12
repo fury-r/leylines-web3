@@ -39,6 +39,17 @@ const Messages = ({ styles, data, setId, setIsOpen }) => {
                 <label className='flex rounded-sm p-2 text-sm uppercase tracking-[0.2em] text-slate-500 shadow-sm'>
                   seen
                 </label>
+              ) : value.user == 1 && key == data.data.length - 1 ? (
+                <label className='flex rounded-sm p-2 text-sm uppercase tracking-[0.2em] text-slate-400 shadow-sm'>
+                  delivered
+                </label>
+              ) : (
+                <></>
+              )}
+              {value.integrity_error == true ? (
+                <label className='mt-1 rounded-sm bg-amber-50 p-2 text-xs font-medium uppercase tracking-[0.2em] text-amber-700 shadow-sm'>
+                  Integrity check failed
+                </label>
               ) : (
                 <></>
               )}
