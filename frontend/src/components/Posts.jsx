@@ -29,7 +29,6 @@ const Posts = ({ data, handleChange, mode, setData }) => {
   const [bids, setBids] = useState([])
 
   useEffect(() => {
-    console.log(mode, data)
     if (mode == 2) {
       handlegetBids()
     }
@@ -280,15 +279,15 @@ const Posts = ({ data, handleChange, mode, setData }) => {
               </div>
               <div className='mt-5 flex flex-row'>
                 <div id='likes' className='mr-10'>
-                  <labels className='text-2xl'>
+                  <label className='text-2xl'>
                     <CountUp end={value.likes} />{' '}
                     {value.likes == 1 ? 'like' : 'likes'}
-                  </labels>
+                  </label>
                 </div>
                 <div>
-                  <labels className='text-2xl'>
+                  <label className='text-2xl'>
                     <CountUp end={value.comments} /> comments{' '}
-                  </labels>
+                  </label>
                 </div>
               </div>
             </div>
