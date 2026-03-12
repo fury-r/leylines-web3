@@ -401,6 +401,8 @@ def unsend_messages():
     id = request.args.get('id')
     if not id:
         return json_error('Message id is required', 400)
+    if not ObjectId.is_valid(id):
+        return json_error('Message id is invalid', 400)
     user_id = get_jwt_identity()
     message = db.messages.find_one({"_id": ObjectId(id), "user_1": ObjectId(user_id)})
     if message:
