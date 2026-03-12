@@ -617,7 +617,7 @@ def get_comments():
         return {},422
 
 
-    data=[{'id':str(row['_id']),'comment':decrypt_text(row['comment'],str(row['user_id']),row['nonce']),'likes':len(row['likes']),'liked': False if user_id not in row['likes'].keys() else True,'time':getTimedifference(row['timestamp']),'username':row['users']['username'],'replies':len(row['replies'])} for row in post] 
+    data=[{'id':str(row['_id']),'comment':decrypt_text(row['comment'],str(row['user_id']),row['nonce'],row.get('tag')),'likes':len(row['likes']),'liked': False if user_id not in row['likes'].keys() else True,'time':getTimedifference(row['timestamp']),'username':row['users']['username'],'replies':len(row['replies'])} for row in post] 
 
     print(data)
     return jsonify(data),200

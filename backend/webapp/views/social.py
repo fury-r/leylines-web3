@@ -15,9 +15,12 @@ from webapp.forms.user import UserForm, LoginForm
 from flask_jwt_extended import create_access_token, set_access_cookies, jwt_required, unset_jwt_cookies, get_jwt_identity
 import pymongo
 from webapp.helpers.encryption import decrypt_text, encrypt_text
+from webapp.helpers.response import json_error
+from webapp.utils.logger import get_logger
 
 from webapp.views.content import get_nft_image
 
+logger = get_logger(__name__)
 
 @app.route('/v1/search', methods=['POST'])
 @jwt_required()
@@ -161,7 +164,7 @@ def get_friends(user_id):
     try:
         followers = db.connections.distinct(
             'user_1', {'$or': [{'user_1': user_id}, {'user_2': user_id}]},)
-        print(followers)
+        logger.info('resolved friend ids', extra={'request_id': request.headers.get('X-Request-ID', '-')})
         followers = db.users.find({'_id': {'$in': list(followers)}}, {
                                 'id': {'$toString': '$_id'}, 'username': 1, '_id': 0, 'profile_picture': 1})
         for row in list(followers):
@@ -172,7 +175,7 @@ def get_friends(user_id):
 
         return {'data': data}
     except Exception as e:
-        print(e)
+        logger.exception('failed to resolve friends list', extra={'request_id': request.headers.get('X-Request-ID', '-')})
         return {'data':[]}
 
 
@@ -229,13 +232,16 @@ def open_conversations():
     user = ''
     result = []
     for row in messages:
-        conversation = db.messages.find_one({"msg_id": str(row['_id'])})
+        conversation = db.messages.find_one(
+            {"msg_id": row['_id']},
+            sort=[("datetime", pymongo.DESCENDING)],
+        )
         if user_id == row["user_1"]:
             user = db.users.find_one({"_id": ObjectId(row["user_2"])})
         else:
             user = db.users.find_one({"_id": ObjectId(row["user_1"])})
 
-        unseen = db.messages.find({"$and": [{"msg_id": str(row['_id'])}, {
+        unseen = db.messages.find({"$and": [{"msg_id": row['_id']}, {
                                   "seen": False}, {"user_2": user_id}]}).count()
         time = getTimedifference(user['online'])
 
@@ -247,7 +253,20 @@ def open_conversations():
         if user['visible'] == False:
             row['active'] = False
         if conversation:
-            row.update({'msg': conversation['msg'], 'time': getTimedifference(
+            preview = 'Encrypted message unavailable'
+            try:
+                preview = decrypt_text(
+                    conversation['msg'],
+                    str(conversation['msg_id']),
+                    conversation['nonce'],
+                    conversation.get('tag'),
+                )
+            except ValueError:
+                logger.warning(
+                    'failed to decrypt conversation preview',
+                    extra={'request_id': request.headers.get('X-Request-ID', '-')},
+                )
+            row.update({'msg': preview, 'time': getTimedifference(
                 conversation['datetime'])})
         if len(user['profile_picture']) > 0:
             print("im in")
@@ -267,7 +286,11 @@ def open_conversations():
 def get_messages():
     user_id = ObjectId(get_jwt_identity())
     id = request.args.get('id')
+    if not id:
+        return json_error('Conversation id is required', 400)
     user_2 = db.users.find_one({"username": id})
+    if not user_2:
+        return json_error('Conversation user not found', 404)
     id = ObjectId(user_2['_id'])
     blocked=db.blocked.find_one({'user_1':user_id,'user_2':id})
     restricted=db.restricted.find_one({'user_1':user_id,'user_2':id})
@@ -279,7 +302,22 @@ def get_messages():
         db.messages.update_many({'$or':[{'user_1':user_id,'user_2':id},{'user_1':id,'user_2':user_id}]}, {"$set": {"seen": True}})
 
         for data in messages_list:
-            row = {"id": str(data["_id"]), "msg": decrypt_text(data["msg"],str(data['msg_id']),data['nonce']), "user": 1,'seen':data['seen']}
+            message = 'Encrypted message unavailable'
+            integrity_error = False
+            try:
+                message = decrypt_text(
+                    data["msg"],
+                    str(data['msg_id']),
+                    data['nonce'],
+                    data.get('tag'),
+                )
+            except ValueError:
+                integrity_error = True
+                logger.warning(
+                    'failed to decrypt message',
+                    extra={'request_id': request.headers.get('X-Request-ID', '-')},
+                )
+            row = {"id": str(data["_id"]), "msg": message, "user": 1,'seen':data['seen'], 'integrity_error': integrity_error}
 
             if data['user_1'] != user_id:
                 row['user'] = 2
@@ -293,16 +331,26 @@ def get_messages():
 def send_messages():
     user_id = ObjectId(get_jwt_identity())
     data = request.get_json()
-    print(data)
+    if not data:
+        return json_error('Message payload is required', 400)
+
+    message = (data.get('msg') or '').strip()
+    if not data.get('id'):
+        return json_error('Conversation target is required', 400)
+    if not message:
+        return json_error('Message cannot be empty', 400)
+
     user = db.users.find_one({"username": data["id"]})
+    if not user:
+        return json_error('Conversation user not found', 404)
     data["id"] = user['_id']
     # block and restrict and unknown conditions
     blocked = db.blocked.find_one({'user_1': user_id, 'user_2': user['_id']})
-    restricted = db.blocked.find_one(
+    restricted = db.restricted.find_one(
         {'user_1': user_id, 'user_2': user['_id']})
 
     if blocked or restricted:
-        return {'message': 'You cannot text this user'}, 200
+        return json_error('You cannot text this user', 403)
     messages = db.conversations.find_one({"$or":
                                          [
                                              {"$and":
@@ -328,16 +376,7 @@ def send_messages():
             {"$and": [{"user_1": user_id}, {"user_2": data["id"]}]})
     else:
         id = messages["_id"]
-    encoded,nonce,tag=encrypt_text(data['msg'],str(id))
-    print({
-
-        "msg_id": id,
-        "user_1": user_id,
-        "user_2": data['id'],
-        "msg": data['msg'],
-        "seen": False,
-        "datetime": datetime.now()
-    })
+    encoded,nonce,tag=encrypt_text(message,str(id))
     db.messages.insert_one({
 
         "msg_id": id,
@@ -349,6 +388,10 @@ def send_messages():
         "seen": False,
         "datetime": datetime.now()
     })
+    logger.info(
+        'stored encrypted message',
+        extra={'request_id': request.headers.get('X-Request-ID', '-')},
+    )
     return {}, 200
 
 
@@ -356,14 +399,16 @@ def send_messages():
 @jwt_required()
 def unsend_messages():
     id = request.args.get('id')
-
+    if not id:
+        return json_error('Message id is required', 400)
+    if not ObjectId.is_valid(id):
+        return json_error('Message id is invalid', 400)
     user_id = get_jwt_identity()
-    message = db.messages.find_one({"user_1": ObjectId(user_id)})
-    print(message)
+    message = db.messages.find_one({"_id": ObjectId(id), "user_1": ObjectId(user_id)})
     if message:
         db.messages.delete_one({"_id": ObjectId(id)})
     else:
-        return {}, 400
+        return json_error('Message not found', 404)
 
     return {}, 200
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, Fragment, useRef } from 'react'
+import React, { useEffect, useState, Fragment } from 'react'
 import { useRouter } from 'next/router'
 import axios from '../../../../api/axios'
 import { Dialog, Transition } from '@headlessui/react'
@@ -8,45 +8,50 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faList } from '@fortawesome/free-solid-svg-icons'
 import Messages from './messages'
 import { BiSend } from 'react-icons/bi'
+import { logger } from '../../../../utils/logger'
 const Conversation = () => {
   const router = useRouter()
-  const [show, setshow] = useState(false)
+  const [show, setShow] = useState(false)
   const [data, setData] = useState({
     data: []
   })
   const [id, setId] = useState(0)
   const [text, setText] = useState('')
   const [isOpen, setIsOpen] = useState(false)
-  const textfield = useRef()
   useEffect(() => {
-    console.log(router.query)
-    getConversation()
-  }, [])
+    if (router.query.id) {
+      getConversation()
+    }
+  }, [router.query.id])
 
   const getConversation = () => {
     axios
       .get('/v1/get-message?id=' + router.query.id)
       .then((res) => setData(res.data))
       .catch((err) => {
-        console.log(err)
+        logger.error('Failed to load conversation', err)
       })
   }
   const handlesendMessage = async (e) => {
     e.preventDefault()
+    if (!text.trim()) {
+      return
+    }
     await axios
       .post('/v1/send-message', {
         id: router.query.id,
-        msg: text
+        msg: text.trim()
       })
       .then((res) => {
         if (res.data?.message) {
           toast.error(res.data.message)
+        } else {
+          toast.success('Message sent')
         }
-        console.log(res.data)
         setText('')
       })
       .catch((err) => {
-        console.log(err)
+        logger.error('Failed to send message', err)
       })
     getConversation()
   }
@@ -60,16 +65,16 @@ const Conversation = () => {
   const handleUnsendMessage = () => {
     axios
       .get('/v1/unsend-message?id=' + id)
-      .then((res) => {
+      .then(() => {
         setIsOpen(false)
         getConversation()
       })
       .catch((er) => {
-        console.log(er?.reponse?.data)
+        logger.error('Failed to unsend message', er?.response?.data || er)
       })
   }
   return (
-    <div className='flex flex-col  justify-between   '>
+    <div className='flex flex-col justify-between'>
       <Transition appear show={isOpen} as={Fragment}>
         <Dialog
           as='div'
@@ -117,20 +122,25 @@ const Conversation = () => {
           </div>
         </Dialog>
       </Transition>
-      <div class=' flex  flex-1 flex-col  '>
+      <div className='flex flex-1 flex-col'>
         <Toaster />
         <AccountAction
           showMenu={show}
-          setShowMenu={setshow}
+          setShowMenu={setShow}
           reload={getConversation}
           data={data}
         />
 
         <div className=' '>
-          <div className='fixed w-1/2 '>
-            <div className='flex flex-row items-center  justify-between p-3 shadow-md bg-white'>
-              <label className='text-xl text-black'>{data?.username}</label>
-              <button onClick={() => setshow(true)} className='text-3xl'>
+          <div className='fixed w-1/2'>
+            <div className='flex flex-row items-center justify-between bg-white p-3 shadow-md'>
+              <div className='flex flex-col'>
+                <label className='text-xl text-black'>{data?.username}</label>
+                <span className='text-xs uppercase tracking-[0.25em] text-emerald-500'>
+                  Encrypted chat
+                </span>
+              </div>
+              <button onClick={() => setShow(true)} className='text-3xl'>
                 <FontAwesomeIcon icon={faList} />
               </button>
             </div>
@@ -141,22 +151,19 @@ const Conversation = () => {
             setId={setId}
             setIsOpen={setIsOpen}
           />
-          <div className=' p-5 h-5/6  bg-white '>
-            <form className=' mb-2 fixed bottom-32 w-2/3 flex flex-row items-center '>
+          <div className='h-5/6 bg-white p-5'>
+            <form className='fixed bottom-32 mb-2 flex w-2/3 flex-row items-center'>
               <textarea
-                class=' h-20 w-3/4  text-3xl resize-none items-center rounded-xl text-left border border-gray-300 bg-gray-200 py-2 px-4  pt-10 shadow-md'
+                className='h-20 w-3/4 resize-none items-center rounded-xl border border-gray-300 bg-gray-200 px-4 pt-6 text-left text-2xl shadow-md'
                 rows='1'
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder='Message...'
-                onKeyPress={(e) => {
-                  if (e.key == 'Space') {
-                  }
-                }}
               />
               <button
-                className='mx-3 flex text-2xl justify-center items-center bg-black text-white p-5 rounded-lg shadow-lg'
+                className='mx-3 flex items-center justify-center rounded-lg bg-black p-5 text-2xl text-white shadow-lg disabled:cursor-not-allowed disabled:bg-slate-400'
                 onClick={handlesendMessage}
+                disabled={!text.trim()}
               >
                 Send <BiSend className='text-5xlxl' />
               </button>

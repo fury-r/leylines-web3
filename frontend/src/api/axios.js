@@ -1,6 +1,7 @@
 // eslint-disable-next-line
 
 import axios from 'axios'
+import { createTraceId, logger } from '../utils/logger'
 
 // eslint-disable-next-line no-undef
 const url = typeof window !== 'undefined' ? process.env.BASE_URL : null
@@ -15,10 +16,25 @@ axiosInstance.interceptors.request.use(async (config) => {
 
       config.headers['Authorization'] = `Bearer ${token}`
       config.headers['Access-Control-Allow-Origin'] = '*'
+      config.headers['X-Request-ID'] = createTraceId()
     } catch (e) {
-      console.error(e)
+      logger.error('Failed to prepare API request', e)
     }
     return config
   }
 })
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    logger.error('API request failed', {
+      status: error?.response?.status,
+      url: error?.config?.url,
+      method: error?.config?.method,
+      data: error?.response?.data
+    })
+    return Promise.reject(error)
+  }
+)
+
 export default axiosInstance
